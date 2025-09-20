@@ -29,3 +29,21 @@ class SimpleDNA_CNN(nn.Module):
     def forward(self,x):
       x = self.conv_layer(x)
       return self.classifier(x)
+
+class FeatureExtractor(nn.Module):
+    def __init__(self, original_model):
+        super(FeatureExtractor, self).__init__()
+        # Using the convolutional part from the original model
+        self.conv_layer = original_model.conv_layer
+
+        # Using the first part of the classifier (up to the 128-dim layer)
+        self.feature_layer = nn.Sequential(
+            nn.Flatten(),
+            original_model.classifier[1], # nn.Linear(conv_output_size, 128)
+            original_model.classifier[2]  # nn.ReLU()
+        )
+
+    def forward(self, x):
+        x = self.conv_layer(x)
+        x = self.feature_layer(x)
+        return x
