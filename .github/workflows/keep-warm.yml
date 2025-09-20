@@ -1,0 +1,18 @@
+name: Keep Render Warm
+
+on:
+  schedule:
+    - cron: "*/8 * * * *"   # every 8 minutes
+  workflow_dispatch:
+
+jobs:
+  keep-warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl API
+        run: |
+          for i in {1..3}; do
+            curl -fsS https://edna-api.onrender.com/ && break
+            sleep 10
+          done
+        continue-on-error: true
