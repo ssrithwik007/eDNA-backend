@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Deep-Sea DNA Analysis Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c1445 0%, #1e3a8a 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(45deg, #60a5fa, #34d399, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(96, 165, 250, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .search-section {
+            background: rgba(30, 58, 138, 0.2);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            font-size: 1.1em;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            border-radius: 15px;
+            color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .upload-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px dashed rgba(96, 165, 250, 0.4);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover {
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #60a5fa;
+            margin-bottom: 15px;
+        }
+
+        .upload-filename {
+            font-size: 1.1em;
+            color: #34d399;
+            margin-top: 10px;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(45deg, #10b981, #059669);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+        }
+
+
+
+        .new-species-alert {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .alert-icon {
+            font-size: 2em;
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: rgba(30, 58, 138, 0.2);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(96, 165, 250, 0.3);
+            border-top: 3px solid #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none; }
+        .visible { display: block; }
+
+        @media (max-width: 768px) {
+            .title { font-size: 2em; }
+            .upload-section { flex-direction: column; }
+            .species-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">DeepTide - eDNA Analysis Tool</h1>
+            <p class="subtitle">Upload a water sample or manually enter a DNA sequence to identify marine species.</p>
+        </div>
+        <div class="search-section">
+            <div class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">⬆️</div>
+                    <p id="uploadText">Click to upload a .fasta or .txt file</p>
+                    <p id="uploadedFilename" class="upload-filename hidden"></p>
+                </div>
+                <input type="file" id="waterSample" accept=".fasta,.fa,.txt" class="hidden" />
+            </div>
+            <p style="text-align: center; color: #94a3b8; margin: 20px 0;">— OR —</p>
+            <div class="search-container">
+                <textarea id="manualSequence" placeholder="Enter DNA sequence (300 characters)" class="search-input" rows="4"></textarea>
+                <button onclick="startManualAnalysis()" class="search-btn">Analyze</button>
+            </div>
+            <button onclick="startAnalysis()" class="analyze-btn">Start Analysis</button>
+        </div>
+
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Analyzing sample... please wait ⏳</p>
+        </div>
+
+        <div id="resultsSection" class="hidden">
+            <h2 style="margin-bottom: 20px;">Analysis Results</h2>
+        </div>
+
+        <div id="summarySection" class="hidden">
+            <h2 style="margin-bottom: 20px;">Summary Statistics</h2>
+            <div class="stats-section" id="summaryStats"></div>
+            <div id="umapPlotContainer" style="text-align:center; margin-top: 20px;">
+                <img id="umapPlot" alt="UMAP Plot" style="max-width: 100%; border-radius: 15px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);" />
+            </div>
+        </div>
+
+        <div id="newSpeciesAlert" class="new-species-alert hidden">
+            <div class="alert-icon">🚨</div>
+            <h3 style="color: #ef4444;">New species detected!</h3>
+            <p>This sequence does not match any known species in our database. Further research is required.</p>
+        </div>
+
+        <script>
+            document.getElementById('uploadBox').addEventListener('click', () => {
+                document.getElementById('waterSample').click();
+            });
+
+            document.getElementById('waterSample').addEventListener('change', (event) => {
+                const fileName = event.target.files[0]?.name;
+                if (fileName) {
+                    document.getElementById('uploadText').textContent = "File uploaded successfully!";
+                    document.getElementById('uploadText').style.color = '#34d399';
+                    document.getElementById('uploadedFilename').textContent = fileName;
+                    document.getElementById('uploadedFilename').classList.remove('hidden');
+                    document.getElementById('uploadBox').style.borderColor = '#34d399';
+                }
+            });
+
+            async function startAnalysis() {
+                const waterSample = document.getElementById('waterSample').files[0];
+
+                if (!waterSample) {
+                    alert("Please upload a water sample file first.");
+                    return;
+                }
+
+                document.getElementById('loadingSection').classList.add('visible');
+                document.getElementById('resultsSection').classList.add('hidden');
+document.getElementById('summarySection').classList.add('hidden');
+                document.getElementById('newSpeciesAlert').classList.add('hidden');
+
+                try {
+                                        const analysisResults = await analyzeWaterSampleBulk(waterSample);
+
+                    document.getElementById('loadingSection').classList.remove('visible');
+                    document.getElementById('resultsSection').classList.remove('hidden');
+document.getElementById('summarySection').classList.remove('hidden');
+
+                    updateSummary(analysisResults.summary);
+                    displayUMAPPlot(analysisResults.plot);
+
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    document.getElementById('loadingSection').classList.remove('visible');
+                    document.getElementById('resultsSection').classList.remove('hidden');
+                    alert("An error occurred during analysis. Please check the console for details.");
+                }
+            }
+
+            async function startManualAnalysis() {
+                const sequence = document.getElementById('manualSequence').value.trim();
+
+                if (!sequence) {
+                    alert("Please enter a DNA sequence.");
+                    return;
+                }
+
+                const EXPECTED_LENGTH = 300;
+
+                if (sequence.length !== EXPECTED_LENGTH) {
+                    alert(`Invalid sequence length. Expected ${EXPECTED_LENGTH} characters, but got ${sequence.length}.`);
+                    return;
+                }
+
+                document.getElementById('loadingSection').classList.add('visible');
+                document.getElementById('resultsSection').classList.add('hidden');
+document.getElementById('summarySection').classList.add('hidden');
+                document.getElementById('newSpeciesAlert').classList.add('hidden');
+
+                try {
+                    const analysisResults = await analyzeWaterSample(sequence);
+
+                    document.getElementById('loadingSection').classList.remove('visible');
+                    document.getElementById('resultsSection').classList.remove('hidden');
+document.getElementById('summarySection').classList.remove('hidden');
+
+                    updateStats();
+                    displayResults(analysisResults, 'analysis');
+
+        // Create a summary object for single sequence
+        const summary = {
+            class_counts: {},
+            average_confidence: parseFloat(analysisResults[0].confidence),
+            total_sequences: 1,
+            valid_predictions: 1
+        };
+        summary.class_counts[analysisResults[0].species] = 1;
+
+        updateSummary(summary);
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    document.getElementById('loadingSection').classList.remove('visible');
+                    document.getElementById('resultsSection').classList.remove('hidden');
+                    alert("An error occurred during analysis. Please check the console for details.");
+                }
+            }
+
+// reads Fasta file 
+            async function readFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                        const text = event.target.result.trim();
+                        const lines = text.split(/\r?\n/);
+                        const sequence = lines.filter(line => !line.startsWith(">")).join("");
+                        resolve(sequence);
+                    };
+                    reader.onerror = error => reject(error);
+                    reader.readAsText(file);
+                });
+            }
+
+            // backend communication for single sequence
+            async function analyzeWaterSample(sampleData) {
+                const response = await fetch('http://localhost:8000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sequence: sampleData }),
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                return [{ species: data.prediction, confidence: `${data.confidence.toFixed(2)}%`, status: "predicted" }];
+            }
+
+            // backend communication for bulk prediction
+            async function analyzeWaterSampleBulk(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('http://localhost:8000/bulk_predict', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                return data;
+            }
+
+            function updateSummary(summary) {
+                const summaryStats = document.getElementById('summaryStats');
+                summaryStats.innerHTML = '';
+
+                for (const [key, value] of Object.entries(summary.class_counts)) {
+                    const statCard = document.createElement('div');
+                    statCard.className = 'stat-card';
+                    statCard.innerHTML = `
+                        <div class="stat-number">${value}</div>
+                        <div class="stat-label">${key}</div>
+                    `;
+                    summaryStats.appendChild(statCard);
+                }
+
+                const avgConfidenceCard = document.createElement('div');
+                avgConfidenceCard.className = 'stat-card';
+                avgConfidenceCard.innerHTML = `
+                    <div class="stat-number">${summary.average_confidence.toFixed(2)}%</div>
+                    <div class="stat-label">Average Confidence</div>
+                `;
+                summaryStats.appendChild(avgConfidenceCard);
+
+                const totalSeqCard = document.createElement('div');
+                totalSeqCard.className = 'stat-card';
+                totalSeqCard.innerHTML = `
+                    <div class="stat-number">${summary.total_sequences}</div>
+                    <div class="stat-label">Total Sequences</div>
+                `;
+                summaryStats.appendChild(totalSeqCard);
+
+                const validPredCard = document.createElement('div');
+                validPredCard.className = 'stat-card';
+                validPredCard.innerHTML = `
+                    <div class="stat-number">${summary.valid_predictions}</div>
+                    <div class="stat-label">Valid Predictions</div>
+                `;
+                summaryStats.appendChild(validPredCard);
+            }
+
+            function displayUMAPPlot(base64String) {
+                const umapPlot = document.getElementById('umapPlot');
+                if (base64String) {
+                    umapPlot.src = base64String;
+                    umapPlot.style.display = 'block';
+                } else {
+                    umapPlot.style.display = 'none';
+                }
+            }
+
+            function updateStats() {
+                console.log("Stats updated!");
+            }
+        </script>
+    </div>
+</body>
+</html>

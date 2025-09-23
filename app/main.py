@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 from .model.model_def import SimpleDNA_CNN, FeatureExtractor
@@ -23,6 +24,14 @@ class OutputPrediction(BaseModel):
 
 # Create an instance of the FastAPI class
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for testing, can be restricted later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Paths and Constants ---
 BASE_DIR = Path(__file__).resolve().parent
