@@ -11,8 +11,10 @@ from sklearn.cluster import DBSCAN
 from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
 import seaborn as sns
+import scipy.spatial.distance as distance
 
 SEQ_LENGTH = 300
+CLASSES = ['Cnidaria', 'Arthropoda', 'Porifera', 'Echinodermata']
 
 def one_hot_encode(seq: str):
     mapping = {'A': 0, 'C': 1, 'G': 2, 'T': 3, 'N': 4}
@@ -87,7 +89,6 @@ def process_sequences(sequences: list[str], feature_extractor, device: str = "cp
     with torch.no_grad():
         dummy = torch.randn(1, 4, SEQ_LENGTH)
         emb = feature_extractor(dummy)
-        print("Embedding shape:", emb.shape)
     padded_sequences = [seq[:SEQ_LENGTH].ljust(SEQ_LENGTH, 'N') for seq in sequences]
     encoded_seqs = [one_hot_encode(seq) for seq in padded_sequences]
     seq_tensor = torch.tensor(np.array(encoded_seqs), dtype=torch.float32).to(device)
@@ -110,60 +111,91 @@ def safe_umap_transform(reducer, emb_sanitized):
             return reducer.transform(emb_sanitized)
 
 def create_umap(
-    embeddings: np.ndarray,
+    new_embeddings: np.ndarray,
     cluster_labels: List[int],
     predictions: List[str],
+    umap_reducer,
+    ref_df,
+    distance_threshold
 ):
     """
     Generates a single UMAP plot colored by model prediction with outliers highlighted,
     and returns it as a Base64 encoded string.
     """
-    reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, random_state=42)
-    embeddings_2d = reducer.fit_transform(embeddings)
+    cluster_centroids = ref_df.groupby('label')[['x', 'y']].mean().to_dict('index')
+    # Convert to a format suitable for distance calculation
+    centroid_labels = list(cluster_centroids.keys())
+    centroid_coords = [list(c.values()) for c in cluster_centroids.values()]
 
-    # Create the primary visualization DataFrame
-    vis_df = pd.DataFrame(data=embeddings_2d, columns=['UMAP 1', 'UMAP 2'])
+    new_coords = umap_reducer.transform(new_embeddings)
 
-    # --- Create the new 'clusters' column for coloring ---
-    # 1. Start with the model's predictions
-    vis_df['cluster_label'] = cluster_labels
-    vis_df['clusters'] = predictions
+    # --- Step 3: Classify each new point based on distance to centroids ---
+    new_labels = []
+    for point in new_coords:
+        # Calculate distance from the new point to all cluster centroids
+        dists = distance.cdist([point], centroid_coords)[0]
+        min_dist_idx = np.argmin(dists)
+        min_dist = dists[min_dist_idx]
+        closest_cluster = centroid_labels[min_dist_idx]
 
-    # 2. Identify outliers from DBSCAN (where label is -1) and overwrite
-    #    the prediction label with 'Outlier' for distinct coloring.
-    is_outlier = [label == -1 for label in cluster_labels]
-    vis_df.loc[is_outlier, 'clusters'] = 'Outlier'
+        # Apply the threshold to decide if it's known or novel
+        if min_dist <= distance_threshold:
+            new_labels.append(f"New_{closest_cluster}")
+        else:
+            new_labels.append("Potentially Novel")
 
-    # 2. Overlay the new data points
-    if not vis_df.empty:
-        # Separate outliers from clustered new points
-        outliers = vis_df[vis_df['cluster_label'] == -1]
-        clustered_new = vis_df[vis_df['cluster_label'] != -1]
+    # --- Step 4: Prepare DataFrames for plotting ---
+    new_df = pd.DataFrame(new_coords, columns=['x', 'y'])
+    new_df['label'] = new_labels
 
-        # Plot the new points that were clustered
-        if not clustered_new.empty:
-            sns.scatterplot(
-                data=clustered_new, x='UMAP 1', y='UMAP 2',
-                hue='clusters',    
-                palette='bright',
-                marker='o',
-                s=100, # Larger size to stand out
-            )
-        
-        # Plot the outliers with a distinct marker
-        if not outliers.empty:
-            sns.scatterplot(
-                data=outliers, x='UMAP 1', y='UMAP 2',
-                color='red',
-                marker='X', # Use an 'X' for outliers
-                s=120, # Make them stand out even more
-                label='New Sequence (Outlier)'
-            )
+    known_new_df = new_df[new_df['label'] != 'Potentially Novel']
+    novel_df = new_df[new_df['label'] == 'Potentially Novel']
 
-    plt.title('UMAP of New Sequences vs. Reference Database')
+    # --- Step 5: Plotting ---
+    plt.figure(figsize=(14, 12))
+
+    # Plot the original reference map
+    ax = sns.scatterplot(
+        data=ref_df,
+        x='x', y='y',
+        hue='label',
+        palette=sns.color_palette("hls", len(ref_df['label'].unique())),
+        s=20,
+        alpha=0.4
+    )
+
+    # Plot the newly identified 'known' sequences
+    if not known_new_df.empty:
+      sns.scatterplot(
+          data=known_new_df,
+          x='x', y='y',
+          hue='label',
+          palette='deep', # Use a different palette to make them pop
+          s=20, # Large X marker
+          ax=ax,
+          edgecolor='black',
+          linewidth=1
+      )
+
+    # Plot the 'novel' sequences as stars
+    if not novel_df.empty:
+      sns.scatterplot(
+          data=novel_df,
+          x='x', y='y',
+          color='red',
+          marker='*',
+          s=100, # Very large star marker
+          ax=ax,
+          label='Potentially Novel',
+          edgecolor='black',
+          linewidth=1
+      )
+
+    plt.title('UMAP with Classified eDNA Samples')
     plt.xlabel('UMAP Dimension 1')
     plt.ylabel('UMAP Dimension 2')
-    plt.legend(title='Predicted Class', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(title='Category', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
 
     # --- Convert to Base64 ---
