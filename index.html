@@ -64,7 +64,7 @@
 
         .search-input {
             width: 100%;
-            padding: 15px 50px 15px 20px;
+            padding: 15px 60px 15px 20px;
             font-size: 1.1em;
             background: rgba(15, 23, 42, 0.8);
             border: 2px solid rgba(96, 165, 250, 0.3);
@@ -81,8 +81,8 @@
 
         .search-btn {
             position: absolute;
-            right: 5px;
-            top: 50%;
+            right: 10px;
+            bottom: 0px;
             transform: translateY(-50%);
             background: linear-gradient(45deg, #3b82f6, #1d4ed8);
             border: none;
@@ -91,6 +91,7 @@
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
+            
         }
 
         .search-btn:hover {
@@ -260,8 +261,8 @@
         <div id="summarySection" class="hidden">
             <h2 style="margin-bottom: 20px;">Summary Statistics</h2>
             <div class="stats-section" id="summaryStats"></div>
-            <div id="umapPlotContainer" style="text-align:center; margin-top: 20px;">
-                <img id="umapPlot" alt="UMAP Plot" style="max-width: 100%; border-radius: 15px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);" />
+            <div id="umapPlotContainer" style= "margin-top: 20px; padding-left: 140px">
+                <img id="umapPlot" alt="UMAP Plot" style="width: 25cm; text-align:center;  border-radius: 15px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);" />
             </div>
         </div>
 
